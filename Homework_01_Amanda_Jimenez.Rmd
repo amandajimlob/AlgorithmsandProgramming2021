@@ -1,0 +1,260 @@
+---
+title: "Homework 1"
+output: html_document
+author: "Amanda Jiménez Lobato"
+---
+
+RULES:
+1. Deadline for homework is Sunday 23:59. Try to turn it in at least a few minutes before to avoid any issues with failed uploads, slow internet, etc. Late admissions are not accepted.
+2. Backup your work.
+3. If you get stuck on something, try googling it first. You can find answers to a lot of questions on several public forums, but consider those to be guidelines and not solutions. ABSOLUTELY DO NOT COPY-PASTE THE ANSWERS FROM THE INTERNET.
+4. If that fails, you're welcome to ask a question on the Moodle forum, but try to do it in a way which doesn't explain or hint at a part of a solution. If you cannot ask your question without revealing a part of the solution, send an e-mail to dglavas@bioinfo.hr instead of posting on the forum. 
+5. ABSOLUTELY DO NOT COPY-PASTE THE ANSWERS FROM YOUR COLLEAGUES.
+6. Each task states how the final solution (variable or function) should be named. Please take care to name the answers exactly as specified because it helps us in correcting your homeworks.
+6. Please hand in a "clean" version of your homework. That means no error-producing code and no more than one solution for each task (unless specified otherwise in the question). Also, please leave out or at least comment parts of the code which are specific to your system (such as setting the work directory and installing packages). When you're ready to hand in the final version of your homework, please run it once more in a clean environment to make sure you have all variables defined. This means cleaning your environment (either by hand or by re-starting your R session) and then running the whole code once in the order in which it's written.
+
+
+
+Before you start, run the following chunk. It will install and load packages you need to use Rmarkdown and all its options. If the system asks for permission to install additional packages in order to enable installing those two, allow it.
+If you have any trouble installing those packages, send an e-mail to dglavas@bioinfo.hr. In the meantime, you can start solving your homework in an ordinary R script - just note which task is it, and don't forget to comment all lines which aren't executable code.
+
+```{r setup, include=FALSE}
+#install.packages("rmarkdown")
+#install.packages("knitr")
+#library(rmarkdown)
+#library(knitr)
+```
+
+Good luck! :)
+
+
+
+### 1.
+##### 1+1+2 points
+
+Put numbers from 200 to 1 (in that order!) to vector myVector.
+Calculate :  
+  
+A) Sum of every third number of vector myVector and save it in a variable var1a.  
+```{r}
+myVector <- 200:1 ; myVector
+extract1 <- myVector[seq(3, length(myVector), 3)] ; extract1
+var1a <- sum(extract1) ; var1a
+```
+
+B) Sum of all numbers that are divisible by 15 and save it in a variable var1b.
+```{r}
+extract2 <- myVector[myVector%%15 == 0]; extract2
+var1b <- sum(extract2) ; var1b
+```
+
+C) Sum of all numbers that are divisible by number X or number Y, but not by numbers X and Y. Try it with X=5 and Y=3 and save it in a variable var1c.  
+```{r}
+X <- 5
+Y <- 3
+XY <- X*Y
+extract3 <- myVector[(myVector%%X == 0) & !(myVector%%XY == 0) | (myVector%%Y == 0) & !(myVector%%XY == 0)] ; extract3
+var1c <- sum(extract3) ; var1c
+```
+
+
+
+### 2.
+##### 4 points (1+1+2)
+You will be using functions seq() and rep() now, so find out exactly what they do by running ?seq() and ?rep().
+
+A) Make a sequence of 100 equidistant numbers ranging from 15.7 to 16.838 and save it in a variable var2a.  
+```{r}
+var2a <- seq(from=15.7, to=16.838, length.out=100); var2a
+
+var2a1 <- rep(15.7, 100)
+var2a1 <- var2a1 + rep((16.838-15.7)/99, each=length(var2a1))*c(0:99); var2a1
+```
+
+B) Do the same thing using cumsum() function instead of seq() and save it in a variable var2b.
+```{r}
+dif <- 16.838-15.7
+add <- dif/99
+vector_add1 <- c(15.7, rep(add, 99)) ; vector_add1
+var2b <- cumsum(vector_add1) ; var2b
+```
+
+C) Make a sequence of equidistant numbers ranging from 1.002 to 1.560 with distance between them equal to 0.006. Again, do it with and without using seq and save it in variables var2c and var2d.  
+```{r}
+var2c <- seq(from=1.002, to=1.560, by=0.006); var2c
+reps <- (1.560-1.002)/0.006
+vector_add2 <- c(1.002, rep(0.006, reps)) 
+var2d <- cumsum(vector_add2) ; var2d
+```
+
+
+
+### 3. 
+##### 2 points
+
+Some variable names in R are already used (these variables come predefined). What do variables LETTERS and letters contain? Execute the following code and explain what's happening:  
+```{r}
+which(LETTERS == "R")
+which(kk <- c(TRUE, FALSE, TRUE, NA, FALSE, FALSE, TRUE))
+names(kk) <- letters[seq(kk)]
+which(kk)
+```
+
+  - In the first line of commands the order is to find which in numeric position in the alphabet is  the letter R placed. As written, it works for capital letters only (between the " ").
+  - This command line returns the positions in the newly created vector 'kk' that take a true value.
+  - 'names<-' is a generic replacement function, so this line is replacing the 'TRUE' values of vector 'kk' for the letter that occupies the same position as these 'TRUE' values in the 'kk' vector in the alphabet. So if the 'TRUE' value positions are 1 3 7 (obtained in the previous line), it will replace those for the letters that occupy positions 1, 3 and 7 in the alphabet. In this case, as it is written, the letters will be replaced in small letters.
+  - Forth line has the same function as line 2, but in this case the 'kk' vector is already created, so it returns the positions in the vector occupied by a 'TRUE' value.
+  
+### 4.   
+##### (2+2+2+2) points  
+Create a 5 x 20 matrix named M and fill it with numbers from 1 to 100. 
+In this task, you should do operations on matrix M sequentially. So when you get to part B, use matrix M from the end of part A and not matrix M as it was when you first created it (and so on).
+
+A) Create a 2 x 3 matrix M2 and fill it with numbers from 1 to 6 by column. Replace the lowermost and rightmost elements (2 x 3) of M with M2. This replacement should be done with one command. After this, save M as var4a.  
+```{r}
+M <- matrix(1:100, nrow=5, ncol=20); M
+M2 <- matrix(1:6, nrow=2, ncol=3) ; M2
+M[4:5, 18:20] <- M2 ; M
+var4a <- M
+```
+
+B) Create a 5x20 matrix named N and fill it with numbers 1 to 100 by row. Replace all the elements of matrix M which are larger than corresponding elements of matrix N with 5. Do the replacement with one line of code. (var4b)   
+```{r}
+N <- matrix(1:100, nrow=5, ncol=20, byrow=TRUE) ; N
+M[M[1:5, 1:20] > N[1:5, 1:20]] <- 5 ; M
+var4b <- M
+```
+
+C) Multiply by 2 those columns in matrix M for which first row of matrix N is divisible by first row of matrix M. (For example if first row of N is 1,6 and first row of M is 2,3 , 1 is not divisible by 2 but 6 is divisible by 3, so we need to multiply only the second column of matrix M.) This should be done in one line. (var4c)  
+```{r}
+#for (i in 1:20){ ifelse(N[1, i]%%M[1, i] == 0, M[1:5, i]<-M[1:5, i]*2, NA)}; M
+
+M[ , N[1, ]%%M[1, ] == 0 ] <- M[ , N[1, ]%%M[1, ] == 0 ]*2
+var4c <- M; var4c
+```
+
+D) Square only those elements in matrix M which are in rows that have a sum smaller than 200. Do this in one line. (var4d)  
+```{r}
+#for (i in 1:5){ ifelse(sum(M[i,1:20])<200, M[i,]<- M[i,]^2, NA)}; M
+
+M[rowSums(M)<200] <- M[rowSums(M) <200]**2
+var4d <- M; var4d
+```
+  
+NOTE: If you don't manage to do some of the tasks in 5 with one line/one command, do it in several - you will get some of the points if the result is correct.  
+  
+  
+  
+### 5.
+#### 8 points  (A-F 1pt, G 2pt)
+Dataset iris is loaded into R by default. Execute ??iris to find out more about it.   
+Data manipulation in tasks B-F should be done in ONE LINE of code. You can still call the finished variable on a separate line, or copy the data in a normal way in part D); but you need to do the subsetting and calculations in one step. You are not allowed to use the subset() function.  
+
+A) How would you get the petal length of the 10th and 15th row of the dataset? Do it both with [[ and $. (var5a1 and var5a2)
+```{r}
+var5a1 <- c(iris[10,3], iris[15,3]) ; var5a1
+var5a2 <- c(iris$Petal.Length[10], iris$Petal.Length[15]); var5a2
+```
+
+B) How about all DISTINCT petal widths of the dataset? (var5b)
+```{r}
+var5b <- unique(iris$Petal.Width) ; var5b
+```
+
+C) Get sepal widths of all the versicolor flowers with Sepal.Lengths larger than 6.1. (var5c)
+```{r}
+var5c <- iris[(iris$Species == "versicolor" & iris$Sepal.Length>6.1), 2]; var5c
+```
+
+D) Copy iris data to my.iris variable. Add another column to my.iris, Petal.Width.Sqrd, which contains squared widths of the petal widths. (my.iris)
+```{r}
+my.iris <- cbind(iris, Petal.Width.Sqrd=(iris$Petal.Width)^2); my.iris
+```
+
+E) Count how many flowers there are of each species that have with petal length smaller than 3.5 (use table to count). (save table as var5e)
+```{r}
+var5e <- table(iris$Species, iris$Petal.Length<3.5, exclude="FALSE"); var5e
+```
+
+F) Count how many flowers there are of each species that have with sepal length smaller than 5.5 and sepal width greater than 2.8. (save table as var7f)
+```{r}
+var7f <- table(iris$Species, iris$Sepal.Length<5.5 & iris$Sepal.Width>2.8, exclude="FALSE") ; var7f
+```
+
+G) Add new column named NewColumn to my.iris. For all virginica flowers that have sepal length greater than 7, change NewColumn to sepal Length * petal Length. (my.iris2) What is the mean value of those numbers? (var5g)
+```{r}
+my.iris2 <- cbind(my.iris, NewColumn = ifelse(iris$Species == "virginica" & my.iris$Sepal.Length > 7, my.iris$Sepal.Length*my.iris$Petal.Length, NA)); my.iris2
+```
+
+
+
+### 6. 
+#### 16 +1 bonus point  (A-F 1; G-I 2; J 1+1; K 3)  
+The CO2 dataset is preloaded into R. You can get more details in R by executing: ??CO2.
+Tasks A-E shouldn't take more than one line of code (same as in exercise 5). You are not allowed to use the subset() function.
+
+A) Subset the data so that only chilled Mc1 plants are returned. (var6a)
+```{r}
+var6a <- CO2[(CO2$Plant == "Mc1" & CO2$Treatment == "chilled"), ]; var6a
+```
+
+B) Subset the data so that only chilled plants from Quebec that were exposed to concentrations less than 250 mL/L of CO2 are returned. (var6b)   
+```{r}
+var6b <- CO2[(CO2$Type == "Quebec" & CO2$conc < 250), ]; var6b
+```
+
+C) As in b part of the exercise but return only those which were in odd-numbered rows in the original dataset. (var6c)  
+```{r}
+var6c <- CO2[(CO2$Type == "Quebec" & CO2$conc < 250 & seq_len(nrow(CO2))%%2 != 0), ]; var6c
+```
+
+D) Subset the data so that only plants exposed to more than 350 mL/L CO2 and that had the uptake of more than 35 ?mol/m^2 sec-1. (var6d)  
+```{r}
+var6d <- CO2[(CO2$conc > 350 & CO2$uptake>35), ]; var6d
+```
+
+E) Same as d part of the exercise, but return only Plant and type part of the dataset. (var6e)  
+```{r}
+var6e <- CO2[(CO2$conc > 350 & CO2$uptake>35), c(1,2)]; var6e
+```
+
+F) Add a new column to the dataset, smalluptake which will have values of uptake divided by 3. (var6f)  
+```{r}
+var6f <- cbind(CO2, smalluptake = CO2$uptake/3); var6f
+```
+
+G) Count the number of plants (rows) that have the value of smalluptake 3.1 or 4.1. Be sure to examine your data and your results carefully - there's a catch you need to deal with. (var6g)
+```{r}
+#length(which(var6f$smalluptake == "4.100000"))
+#length(var6f$smalluptake[var6f$smalluptake == 4.100000])
+
+var6g <- nrow(var6f[var6f$smalluptake == "4.1", ])  + nrow(var6f[var6f$smalluptake == "3.1",]); var6g
+```
+
+H) Calculate the mean uptake for nonchilled plants. Calculate the mean uptake for chilled plants. (var6h1 and var6h2) 
+```{r}
+var6h1 <- mean(CO2$uptake[CO2$Treatment=="nonchilled"]); var6h1
+var6h2 <- mean(CO2$uptake[CO2$Treatment=="chilled"]); var6h2
+```
+
+I) Add a column diffFromMeanUptake that will represent all the differences between uptake and the mean uptake for nonchilled plants and chilled plants (in the same column, if the plant is chilled calculate difference from mean of all chilled plants, if the plant is nonchilled calculate difference from mean for all nonchilled plants). Do this by subsetting. At the end save dataset as var6i.     
+```{r}
+var6i <- cbind(CO2, diffFromMeanUptake = ifelse(CO2$Treatment == "nonchilled", CO2$uptake-var6h1, CO2$uptake-var6h2)); var6i
+```
+
+J) What is the mean diffFromMeanUptake for nonchilled and chilled group? (var6j1 and var6j2) Bonus point: Is this value informative to you in any way? Can you use it to conclude anything?    
+```{r}
+var6j1 <- mean(var6i$diffFromMeanUptake[var6i$Treatment=="nonchilled"]); var6j1
+var6j2 <- mean(var6i$diffFromMeanUptake[var6i$Treatment=="chilled"]); var6j2
+```
+This value is the mean of the deviations from each value in chilled and nonchilled plants to the mean CO2 uptake. So a higher value in this mean means that the variations in the uptake value for each group of plants are bigger. In this case, nonchilled plants tend to deviate more from the mean, this is, the differences in the CO2 uptake in nonchilled plants are deeper. Chilled plants tend to deviate less from the mean.
+
+K) Add a column uptakefctr that will have uptake as a factor. Then save dataset as var6k1. Use this column to calculate mean uptake for chilled plants from Quebec. (var6k2) ("error" is not a correct answer!)  
+```{r}
+uptakefctr <- factor(CO2$uptake)
+
+var6k1 <- cbind(CO2, uptakefctr); var6k1
+
+var6k2 <-mean(as.numeric(as.character(var6k1$uptakefctr[var6k1$Type=="Quebec" & var6k1$Treatment=="chilled"]))); var6k2
+```
+
