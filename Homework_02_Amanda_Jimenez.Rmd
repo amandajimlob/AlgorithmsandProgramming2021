@@ -29,6 +29,7 @@ x <- c(1.01, 1.1, 1.3)
 y <- c(1.01, 1.05, 1)
 x %approx% y
 ```
+<font color="red">You don't need ifelse() here; just " equals <- dif<=0.1 " would do the same thing. This is not a mistake, just stylistic advice for code readability. But outputting TRUE and FALSE as character strings and not boolean variables is a mistake - you can't directly subset anything using the output of your function! Never treat TRUE and FALSE as characters without a very very good reason. 3/5 </font>
 
 
 
@@ -55,11 +56,16 @@ grid$coin.count <- as.character(coin_count)
 grid
 ```
 
+<font color="red">Why save the counts as characters? You could've left them as numeric vectors, add them to grid in the same way as you did with character vectors/strings, and save yourself the trouble of string splitting and conversion later. Conversions are super-convenient when you need them, but don't do them if they're not necessary. Elements in one column of data frame don't have to have length 1, they can be vectors as well (as we said, data frames are basically lists internally so you can save pretty much anything, as long as the number of elements/rows matches across the table).  2.5/3
+  
+Also, a note regarding sampling: if you need 143 vector lengths, it's better to pull them from desired distribution at once. Functions rnorm, runif, and similar guarantee to pull a sample from a particular distribution, but not one of them "remembers" the last iteration when they were called. In other words, it is never a good idea to split your sampling into multiple iterations - because the bigger the sample you're pulling at once, the surer you can be that it really fits the desired distribution. Random number generators are far from perfect, computationally speaking, so try to stick to bigger samples.  </font>
+
+
 C) Make a function which will calculate total weight of gold coins of various dimensions. The function's input should be an object of the same type and layout as the object you created in part B) - in other words, your new function should work on the object you created. The function should return one number: total weight. (4 points)
 ```{r}
 coinWeight <- function(df) {
   d_gold <- 19.3
-  r <- as.vector(df[,1])
+  r <- as.vector(df[,1])    ### why do you need as.vector() here? it's already a vector
   th <- as.vector(df[,2])
   n <- sapply(strsplit(as.character(df[, 3]), ','), function(x) sum(as.numeric(x)))
   weight <- mapply(function(r,th,n){vol_one <- (r^2) * pi * th; vol <- sum(vol_one * n); weight <- vol * d_gold / 1000; return(weight)}, r, th, n)
@@ -68,6 +74,7 @@ coinWeight <- function(df) {
 }
 coinWeight(grid)
 ```
+<font color="red">nice usage of mapply!</font>
 
 D) Generate data for gold, silver and copper coins. Silver coins have radii from 1.5 to 3.0 in increments of 0.25 and thickness from 0.12 to 0.28 in increments of 0.02. Copper coins have radii from 1.0 to 2.2 cm in increments of 0.2 and thickness from 0.15 to 0.35 in increments of 0.05. You can assume per-square and total distributions are the same as for gold coins in B).
 Basically, you need to repeat the data creation process from A) and B) three times with different parameters. Do NOT do this by writing almost the same code three times! You need to find a way to "automate" the process. You can choose to organise everything from A) and B) into one function, or split the the process into smaller parts and handle it that way - whatever you find easiest. But you need to generate all the data with one call of (each) function. You will probably use some kind of repetition or looping mechanism, but use only the ones which are optimised in R (e.g. apply family). You are not allowed to use classic for/while/repeat loops. (5 points)
@@ -97,14 +104,17 @@ Generate_data <- function(material){
     r <- seq(1.0, 2.2, by = 0.2)
     th <- seq(0.15, 0.35, by = 0.05)
   }
-grid <- Dimensions(r, th)
-df_material <- Generate_vectors(grid)
+grid <- Dimensions(r, th)                ### take notice of indentation - this line and the next one should be indented so it's 
+df_material <- Generate_vectors(grid)    ### clearly visible they're a part of function body 
 }
 materials <- c("gold", "silver", "copper")
 three_df <- lapply(materials, Generate_data)
 all_types_df <- Reduce(function(x, y) merge(x, y, all=TRUE), lapply(materials, Generate_data), accumulate=FALSE)
 three_df
 ```
+
+<font color="red">Very nice function organisation and later usage of lappy(), but merge is not the right chioce in the last step. It worked because you specified all=TRUE and there is no combination of dimensions and counts exactly the same so it just bound all three data frames together row by row. However, if you by chance had the same row appearing in 2 or more data frames, you would've lost it. merge() is designed to join tables by reference columns - intersecting them in a way. What you want here is to flatten the list and get 3 dataframes "pasted" together into one (and preferably not lose the information on which row pertains to which material, which you did). In this case, Reduce(rbind, three_df)  would've been the way to go. Reduce-merge is brilliant if you want to sequentially merge several data frames together (in other words, add to one table some columns from another, but not by position but in the way that common information still matches), but unnecessarily risky in this case. Other than that, perfect solution. 4/5  </font>
+
 
 E) Apply the function you created in C)* on the whole data set created in D). Calculate total weights for each type of metal separately, and the total weight you need to haul from the dragon's cave (all the coins together). You should return all that information in one object. (4 points)
 *You will probably need to adjust your original function to include additional parameters. You don't need to re-write the whole function here if you don't want to, you can go back to C) and change the necessary parts there - but remember to check if it still functions correctly!
@@ -128,13 +138,16 @@ coinWeight <- function(df, x) {
   total_weight <- sum(weight)
   total_weight
 }
-positions <- which(lengths(three_df) > 0)
+positions <- which(lengths(three_df) > 0)   ### ??? this is unnecessarily complicated, especially considering the fact that you don't actually need this type of counter
 weights <- c(mapply(coinWeight,three_df, positions), sum(weight_total))
 types <- c("gold_coins_weight", "silver_coins_weight", "copper_coins_weight", "total_coins_weight")
 final_weights <- data.frame(types, weight_total)
 final_weights
 ```
 
+<font color="red">The three ifs (and the accompanying code repetition) could've been avoided if you defined density as an input. You're already using mapply and can pass multiple inputs, so why not take advantage of that?  
+Unfortunately, variable weight_total doesn't exist so I can't run this chunk. I'm guessing that at one point mapply(coinWeight,three_df, positions) was saved as weight_total, and then the sum was added at the end of that vector (so I'll do it like that to be able to check), but that code is gone now and you didn't check if everything runs in a clean environment.  3/4 because everything else is correct.  
+Also, a note: named vector would be a better choice for returning weights information. Same info, less complicated to handle later. </font>
 
 
 ### 3.  
@@ -154,6 +167,7 @@ getSum2 <- function(m,n){
 }
 getSum2(4,6)
 ```
+<font color="red">nice!</font>
 
 
 
@@ -216,6 +230,7 @@ v2 <- c(2, 3, 3)
 getDistance(v1, v2, "Chevyshev")
 ```
 
+<font color="red">Everything good except distance warning is missing. 4/5   </font>
 
 
 ### 5.  
@@ -242,3 +257,8 @@ dif_percentage
 # In my case, a value of difference percentage quite low (0.00115%), so it is a good estimation.
 ```
 
+<font color="red">Yes, it's a good estimation, and well-written as well. Great! </font>
+
+<font color="red">IMPORTANT NOTICE  
+Few of your functions have a striking resemblance to the code one of your colleagues submitted. You obviously invested more time in your homework so I can speculate about the direction in which the copy-paste went, but it doesn't matter - next time we see something like that, everybody involved loses all points for the task, and gets additional negative points as well. This is your first and final warning. Please take it seriously.
+</font>
