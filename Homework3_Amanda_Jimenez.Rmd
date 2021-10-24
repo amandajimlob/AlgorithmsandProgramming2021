@@ -351,13 +351,13 @@ i) In this part functions rleid and shift might be useful to you. What do they d
 ```{r}
 genomeTethya <- data.table::fread("contigTethya.txt")
 genomeTethya
-var2i <- genomeTethya[order(class),.(class, assigned_type=rleid(class))][, .(class=unique(class), sum_types=.N), by="assigned_type" ][order(-sum_types), .SD[1, 2:3]]
+var2i <- genomeTethya[,.(class, assigned_type=rleid(class))][, .(class=unique(class), sum_types=.N), by="assigned_type" ][order(-sum_types), .SD[1, 2:3]]
 var2i
 ```
 
   +  In which positions are those Families (do the analysis on the variable "longestTethya")? Save the result as vector. (2 points)
 ```{r}
-longestTethya <- as.vector(unlist(genomeTethya[, .(class, row_id=.I)][class=="Anthozoa", .SD[,2]]))
+longestTethya <- as.vector(unlist(genomeTethya[, .(class, row_id=.I)][class=="Mammalia", .SD[,2]]))
 longestTethya
 # I undertood that the shift function serves to move entire rows up and down, or to operate with previous or next row, but I didn't really needed it for these tasks.
 ```
