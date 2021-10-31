@@ -1,0 +1,271 @@
+---
+title: "Homework 4. Data manipulation"
+author: "Amanda Jimenez"
+output: html_notebook
+---
+
+
+# Deadline for homework is Sunday, 30.10.2021., 23.55 h
+
+# Instructions and RULES:
++ Perform all of the analysis using only data.table. 
++ It is allowed to use functions that are present in base R (DO NOT forget them as you may need to search them and use them in this homework).
++ All the solutions which use for loops will not be graded. Use the functions from the apply family!!!
++ If certain task contains detailed instructions how to solve something, then those instructions must be followed or these tasks will not be graded.
++ Whenever you are asked to show a certain value or values as an answer and if it is not precisely stated in which format should the answer be (data.table or a vector) then both answers are correct.
++ Manual calculations and writing the answers directly on the code chunk will not be taken into consideration without the proper coding steps (and/or saved variable) that confirm this answer.
+
+```{r setup, include=FALSE}
+## First specify the packages of interest
+packages <- c("learnr", "png", "grid",
+             "data.table", "knitr") # "readr", "readxl")
+
+## Now load all
+lapply(packages, function(X) { library(X, character.only = TRUE)})
+
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Task 1. NMR peaks (10 pts)
+Goal: In this task you will have to upload multiple files in R and save certain calculation in a newly created format. You will be working with peak lists and intensity files for urine samples measured by 1H NMR (Psihogios NG, et al.). Files are located under the folder Task1.
+
+a) Import the files located in folder Task1. Make one table of all the imported files. The table must also have sample id (only the name of the file) and group name (severe kidney disease and healthy). (Since you have not learned regular expression and string manipulation, solve this task without it.). **Do not read files one at the time! Hard coding will not be evaluated!** (5)
+````{r}
+folder1 <- paste(getwd(), "/Task1/Healthy", sep="")
+folder2 <- paste(getwd(), "/Task1/Severe_kidney_disease", sep="")
+csv.list1<- list.files(folder1)
+csv.list2<- list.files(folder2)
+paths1 <- lapply(csv.list1, function(x){ paste(folder1, "/", x, sep="")})
+paths2 <- lapply(csv.list2, function(x){ paste(folder2, "/", x, sep="")})
+dt_healthy <- rbindlist(lapply(paths1, fread, header=TRUE), idcol="Sample")
+dt_healthy[, Sample := unlist(lapply(Sample, function(x){csv.list1[x]}))]
+dt_disease <- rbindlist(lapply(paths2, fread, header=TRUE), idcol="Sample")
+dt_disease[, Sample := unlist(lapply(Sample, function(x){csv.list2[x]}))]
+final_table <- rbind(healthy=dt_healthy, severe_kidney_disease=dt_disease, idcol="group_name")
+final_table
+```
+b) Crate a new subdirectory under the directory "Task1" called "results" using R. Make an R object that contains two tables. You are going to save the R object in the created directory "results". The first table has the summary statistic of ppm of each group (sum, mean, median, min, max). While the second table contains the same summary statistics of ppm but only for three patient with severe kidney disease that have the highest overall intensity. The calculated results must be in rows and groups/patients in columns. (5)
+```{r}
+folder_task1 <- paste(getwd(), "Task1", "results", sep="/")
+dir.create(folder_task1)
+table1<-final_table[, .(sum=sum(ppm), mean=mean(ppm), median=median(ppm), min=min(ppm), max=max(ppm)), by=group_name]
+three_patients<-as.character(unlist(final_table[group_name=="severe_kidney_disease", .(mean_intensity=mean(INTENSITY)), by="Sample"][order(-mean_intensity), .SD[1:3,1]]))
+table2<-final_table[(Sample==three_patients[1] | Sample==three_patients[2] | Sample==three_patients[3]), .(sum=sum(ppm), mean=mean(ppm), median=median(ppm), min=min(ppm), max=max(ppm)), by=group_name]
+table1 <- transpose(table1, keep.names = "results", make.names = "group_name")
+table2 <- transpose(table2, keep.names = "results", make.names = "group_name")
+table2
+file_task1 <- paste(getwd(), "Task1", "results", "results.RData", sep="/")
+save(table1, table2, file = file_task1)
+
+```
+# Task 2. GC content sponges (20 pts)
+Table mononucleotides.txt and dinucleotides.txt contain mono/dinucleotide counts in 7 different sponge species. Use all data.table operations as you need them in these task. 
+Your tasks are as follows:
+```{r}
+mononucleotides <- data.table::fread("http://hex.bioinfo.hr/~mfabijanic/mononucleotides.txt")
+dinucleotides <- data.table::fread("http://hex.bioinfo.hr/~mfabijanic/dinucleotides.txt")
+```
+```{r}
+mononucleotides
+dinucleotides 
+```
+(3 pts) - Change name of the first column to "species". Calculate mono/dinucleotide frequencies for each species (do this with and without *melt* function and in later tasks proceed with only one table of your choice).
+```{r}
+setnames(mononucleotides, "rn", "species")
+setnames(dinucleotides, "rn", "species")
+mononucleotides1 <- copy(mononucleotides)
+dinucleotides1 <- copy(dinucleotides)
+freqs_melt <- function(dt){
+  frqs <-  melt(dt, id.vars = "species")
+  result <- frqs[, total:=sum(value), by="species"][, .(freqs=value/total), by=c("species", "variable")][order(species)]
+  result
+}
+freqs <- freqs_melt(dinucleotides1)
+freqs
+
+freqs_no_melt <- function(dt){
+  names <- colnames(dt)
+  frqs <- dt[, sum := rowSums(.SD[,2:(length(names))])][,.(variable=names[2:(length(names)-1)], freqs=unlist(lapply(.SD[,1:(length(names)-2)], function(x){x/sum}))), by="species"][order(species)]
+  frqs
+  }
+freqs2 <- freqs_no_melt(dinucleotides1)
+freqs2
+```
+
+(3 pts) - Calculate GC content in each sponge and add it as a column to the dinucleotide frequency table.
+```{r}
+mononucleotides1 <- copy(mononucleotides)
+dinucleotides1 <- copy(dinucleotides)
+dinucleotides_freq <- freqs_melt(dinucleotides1)
+mononucleotides1 <- melt(mononucleotides1, id.vars = "species")
+GC_content<-unique(mononucleotides1[, total_length:=sum(value), by="species"][(variable=="G" | variable=="C"), .(GC_content=(sum(value)/total_length)*100), by="species"])
+#vector_freqs<-as.numeric(unlist(dinucleotides_freq[, .(variable, freqs, .N), by="species"][variable=="GC", .(variable, freqs, N, GC_content=unlist(lapply(.SD[,2], function(x){content=x*100}))), by="species"][, rep(GC_content, N), by="species"][,2]))
+#dinucleotides_freq[, GC_count:=vector_freqs][]
+dinucleotides_freq<-merge(dinucleotides_freq,GC_content, all=TRUE)
+dinucleotides_freq
+```
+(1+1+1+1 pts) - If all dinucleotides are equally probable, what is the probability for any of them = expected frequency? Which dinucleotide is underrepresented? Which are overrepresented? Are they reproducibly over/underrepresented in all sponges?
+```{r}
+total_combinations <- dinucleotides_freq[,.N]
+dinucleotides_freq[, uniqueN(species)]
+
+#probability for any of them = expected frequency
+eq_probable<-1/dinucleotides_freq[,uniqueN(variable)]
+eq_probable
+
+# First I did it comparing to the mean value of each dinucleotide in every species, since I understood these was a more visual comparation. After the consultation class, I did it by species, as asked.
+dinucl_underrepresented_mean <- dinucleotides_freq[, .(mean_freqs_din=mean(freqs)), by="variable"][mean_freqs_din<eq_probable]
+dinucl_underrepresented_mean
+dinucl_overrepresented_mean <- dinucleotides_freq[, .(mean_freqs_din=mean(freqs)), by="variable"][mean_freqs_din>eq_probable]
+dinucl_overrepresented_mean
+
+# Over/underrepresentation of dinucleotides by species:
+dinucl_underrepresented <- dinucleotides_freq[freqs<eq_probable][order(variable)]#[,.N, by="variable" ]
+dinucl_underrepresented
+dinucl_overrepresented <- dinucleotides_freq[freqs>eq_probable][order(variable)]#[,.N, by="variable" ]
+dinucl_overrepresented
+```
+The dinucleotide AA is overrepresented in every one of the 7 species, as it does the dinucleotide TT, the dinucleotide AT, the CA and the TG. These results show a clear overrepresentation of the nucleotides A and T, while C and G should have a lower frequency. This goes in the line with what is shown in the mononucleotides_freq data table, since in all the species, the frequencies of A and T is higher, and the ones from C and G are lower, which also makes sense taking into account that A pairs with T and G with C, so the frequency of those pairs should coincide.
+The underrepresented dinucleotides in all species are CC, CG, GC and GG, which, again, goes along with the frequencies observed in the mononucleotides_freq list.
+For the rest of the pairs:
+- AC is overrepresented in Ephydatia, Eunapius, Suberites and Sycon, and underrrepresented in Amphimedon, Oscarella and Tethya. Same as GT.
+- AG is overrepresented in Oscarella, Suberites and Tethya and underrepresented in Amphimedon, Ephydatia, Eunapius and Sycon. Same as in CT.
+- GA is overrepresented in Oscarella and underrepresented in the other six species. Same as TC
+- TA is overrepresented in Amphimedon, Ephydatia, Suberites and Tethya, and underrepresented in Oscarella, Eunapius and Sycon.
+So we can conclude that when a dinucleotide is overrepresented in one specie, its complementary dinucleotide is also overrepresented in that specie, and the same with underrepresented. The complementary dinucleotides (meaning A-T, C-G pairing and 5'->3' for one and 3'->5' for the other one, so GA is complementary to TC, for example). This is reproducible for all species and all dunicleotides, since TA's complementary dinucleotide is also TA, so it would be same recount of species.
+
+```{r}
+mononucleotides_freq
+```
+
+(5 points) - Since GC content differs between sponge species (not all mononucleotides are equally represented), the expected frequency for dinucleotides will not be the same for each sponge species. Calculate the expected frequency for each dinucleotide in each sponge species (*from mononucleotide table*) and add it to a column in dinucleotide frequency table.
+```{r}
+mononucleotides1 <- copy(mononucleotides)
+dinucleotides1 <- copy(dinucleotides)
+mononucleotides_freq <- freqs_melt(mononucleotides1)
+mono_exp_freq <- mononucleotides_freq[order(variable), sapply(.SD[,2], function(x){ AA<-2*x[1]^2
+                                                      AC<-CA<-x[1]*x[2]
+                                                      AG<-GA<-x[1]*x[3]
+                                                      AT<-TA<-x[1]*x[4]
+                                                      CG<-GC<-x[2]*x[3]
+                                                      CT<-TC<-x[2]*x[4]
+                                                      GT<-TG<-x[3]*x[4]
+                                                      GG<-2*x[3]^2
+                                                      CC<-2*x[2]^2
+                                                      TT<-2*x[4]^2
+                                                      list<-list("names"=c("AA", "AC", "CA", "AG", "GA", "AT","TA","CG","GC","CT","TC","GT","TG","GG","CC","TT"), "exp_frec"=c(AA,AC, CA, AG,GA,AT,TA,CG,GC,CT,TC,GT,TG,GG,CC,TT))
+                                                      return(list)}), by="species"][, ":="(variable=V1, exp_freq=V2)][, c(1, 4, 5)]
+dinucleotides_freq_2 <- merge(mono_exp_freq, dinucleotides_freq, by=c("species", "variable"))
+dinucleotides_freq_2
+```
+
+(1+1+1+2 points) - Calculate (observed-expected)/expected score for each dinucleotide and each species. Which dinucleotides are overrepresented and which are underrepresented now when you have taken GC content into account? Is the over/underrepresentation reproducible for all sponge species? How would you explain it with biology in mind?
+```{r}
+overrepresented_din <- dinucleotides_freq_2[, .(species, variable, GC_content, score = (freqs-exp_freq)/exp_freq)][score>0][order(variable)]#[,.N, by="variable" ]
+overrepresented_din
+underrepresented_din <- dinucleotides_freq_2[, .(species, variable, GC_content, score = (freqs-exp_freq)/exp_freq)][score<0][order(variable)]#[,.N, by="variable" ]
+underrepresented_din
+```
+In this case the dinucleotides overrepresented in all the species are CA and TG, again, complementaries, and the underrepresented are AA, CC, CG, GG, TA and TT, so all the dinucleotides with the same nucleotide doubled are less represented than the rest, plus CG and TA, which complementaries are exactly the same as them.
+For the rest of the dinucleotides:
+- AC is overrepresented in Ephydatia, Eunapius, Suberites, Sycon and Tethya, and underrepresented in Amphimedon and Oscarella. The same with GT.
+- AG is overrepresented in Amphidelon, Oscarella, Suberites and Tethya, and underrepresented in Ephydatia, Eunapius and Sycon. The same with CT.
+- AT is only overrepresented in Ephydatia, underrepresented in the rest.
+- GA is only overrepresented in Oscarella, underrepresented in the rest. The same with TC (its complementary)
+- GC is overrepresented in Amphidelon, Ephydatia, Oscarella, Suberites, Sycon and Tethya, and only underrepresented in Eunapius.
+Again, we can see a match between complementaries, which marks the reproducibility in all the species: AC and GT, complementaries, are overrepresented in the same 5 species, and underrepresented in the same other two, and this also happens between AG and CT, and GA and TC. The cases of AT and GC also follow the rule, since these dinucleotides' complementaries are exactly the same.
+
+Taking into account the GC content, Sycon is the one with more GC content, while Tethya and Amphimedon are the species with less GC content. Looking up in different bibliography, I found that the GC content in sponges could have various impacts:
+- "Since cytosine methylation is highly mutagenic, vertebrate and A. queenslandica genomes are highly depleted for CpG dinucleotides. Congruent with the intermediate methylation levels, we found that the genome of E. muelleri is also depleted for CpG dinucleotides, more than most invertebrates but less than in A. queenslandica".
+- "However, it has also been shown that high GC content is correlated to the adaptation to environmental stresses, such as nutrient and energy limitation".
+From these, we can assume that the GC content has a big importance when talking about methylation, and since this is a very important gen expression regulation, the GC content can have a big impact. On one hand, more cytosines means more mutations through methylations, but it could also mean faster ways of adaptation to different environmental challenges, so we can not assume higher development or evolution from a lower % of GC.
+Looking carefully into the data, we can see that when we say one dinucleotide is overrepresented in one specie, it does not mean that the quantity of that dinucleotide is that much higher from the mean. This is very clear taking only Sycon and Amphidelon: both of them have GC, CA and TG overrepresentated, but the frequency of those dinucleotides in Sycon is much higher. Since the calculated score for the dinucleotides frequencies is referred, not only to the number of times that dinucleotide appears, but also to how many times it appears compared to the rest of nucleotides, we can see that in Sycon the GC content is higher because the frequency of all the dinucleotides with G or C is much higher than the ones with A or T, so the total number of times G or C appears in the end is much higher compared to A or T, and that makes a higher GC content. Even though GC dinucleotide are also overrepresentated in Amphidelon, when comparing this frequency to other dinucleotides with A or T is much lower, so in the end, the total sum of G and C nucleotides, relativized to the times that A and T appear, is much lower.
+
+# Task 3. Mutational signatures in human cancer (15 pts)
+
+## Short introduction
+Mutational signatures are characteristic combinations of mutation types arising from specific mutagenesis processes such as DNA replication infidelity, exogenous and endogenous genotoxins exposures, defective DNA repair pathways and DNA enzymatic editing. Type of mutations that occur are base subsitutions, indels and structural variants. 
+Single base substitutions (SBS) are a replacement of a certain nucleotide base with another base. Considering the pyrimidines of the Watson-Crick base pairs, there are only six different possible substitutions: C>A, C>G, C>T, T>A, T>C, and T>G. Current SBS signatures have been identified using 96 different contexts, considering not only the mutated base, but also the bases immediately 5’ and 3’. Detailed examples of those SBS signatures can be found at https://cancer.sanger.ac.uk/cosmic/signatures/SBS/. 
+
+## Task
+Your job is to analyze mutational signatures for patients with breast adenocarcinoma (**Breast-AdenoCA**). However, your lab colleagues have not given you one tidy table for breast cancer patients for analysis but many smaller tables containing the information for all the patients which you have to combine together into one to be able to perform the analysis. 
+
+The files at your disposal are the following:
+
++ MAIN TABLES containing the results from the program SigAnalyzer for mutational signatures SBS2 and SBS13 (each in a separate files, ***SBS2.RDS*** and ***SBS13.RDS***). The names of the columns and rows are missing, but you have been informed that colnames should be the name of the patients and rownames the genomic intervals. Values represent the probability of the mutational signature in specific genomic interval for each patient.
++ Table with ordered patients names. (***patients.txt***)
++ Table with ordered used genomic intervals for the SigAnalyzer. Some regions were filtered from the analysis due to low mappability. (***intervals.txt***)
++ Table with all the genomic intervals and special assigned names by your colleague. (***interval_names.txt***)
+
+The analysis was performed on the pre-selected genomic intervals of 1 Mb (***intervals.txt***) and those intervals are the ones that should be added to the combined table of files ***SBS2.RDS*** and ***SBS13.RDS***. However, your colleague wants to have the special names of the genomic intervals in that file, the ones found under the column **interval** in the file ***interval_names.txt***. 
+
+Your tasks are the following:
+
++ First, make one combined table from the tables containing results for SBS2 and SBS13 (***SBS2.RDS*** and ***SBS13.RDS***). Secondly, add a column "signature_mutations" containing the "SBS2" and "SB13" for the precise rows in the now combined (MAIN TABLE) table. (Must be done in this order for 2 pts)
+```{r}
+SBS2 <- readRDS(paste(getwd(), "/Task3/SBS2.RDS", sep=""))
+SBS13 <- readRDS(paste(getwd(), "/Task3/SBS13.RDS", sep=""))
+main_table <- rbind(SBS2,SBS13)
+sbs <- c(rep("SBS2", as.numeric(unlist(SBS2[,.N]))), rep("SBS13", as.numeric(unlist(SBS13[,.N]))))
+main_table <- main_table[, signature_mutations:=sbs][]
+```
++ Add patients name and special assigned genomic interval name by your colleague to the MAIN TABLE (8 pts) (Hints: Look at the both tables containing intervals. What is the difference between them? Think of your own unique way how can you fix that.). Work as tidy as you can in this task!
+```{r}
+#First we obtain the three tables from the .txt
+special_interval_names <- fread(paste(getwd(), "/Task3/interval_names.txt", sep=""))
+genomic_intervals <- fread(paste(getwd(), "/Task3/intervals.txt", sep=""))
+patients <- fread(paste(getwd(), "/Task3/patients.txt", sep=""))
+
+# Then we convert both intervals tables to the same format, so we can merge them
+genomic_intervals_mod <- copy(genomic_intervals)
+genomic_intervals_mod <- genomic_intervals[order(start)][, chr:=lapply(.SD[,1], function(x){paste("chr",x, sep="")})][]
+setnames(genomic_intervals_mod, "chr", "seqnames")
+special_interval_names_process <- merge(special_interval_names, genomic_intervals_mod, by=c("seqnames", "start", "end"))
+
+#And now we add the new column with the special intervals names to the main table (kind of as row names) and change the names of the columns
+main_table[, row_names:=unlist(special_interval_names_process[, .(interval)]), by="signature_mutations"][]
+vector_names <- c(as.character(unlist(patients)), "signature_mutations", "row_names")
+colnames(main_table) <- vector_names
+main_table <- setcolorder(main_table, c("row_names", "K34ptnnN"))
+main_table
+```
+
++ From the file=**patientsCancerType.txt** add the appropriate cancer type for each patients (3 pts)
+```{r}
+cancers <- fread(paste(getwd(), "/Task3/patientsCancerType.txt", sep=""))
+colnames(cancers) <- c("patient","type_cancer")
+patient_order <- colnames(main_table)
+patient_order <- patient_order[2:81]
+cancer_order <- cancers[match(patient_order, cancers$patient),]
+cancer_order <- transpose(cancer_order, keep.names="row_names", make.names = "patient")
+main_table <- rbind(main_table, cancer_order, fill=TRUE)
+
+
+#colnames(main_table) <- c("row_names", mapply(function(x,y){paste(x, y, sep="_")}, patients[2:81], unlist(cancer_type[, .(cancer_type)])), "signature_mutations")
+
+#colnames(main_table[,2:81]) <- mapply(function(x,y){paste(x, y, sep="\n")}, patients[2:81], unlist(cancer_type[, .(cancer_type)]))
+
+#transpose(main_table, fill= "NA", keep.names="patient", make.names = "row_names")
+#tdt <- transpose(main_table)[, patient :=  colnames(main_table)][]
+
+```
+
++ How many breast adenocarcinoma patients do you have and which one has the total highest probability for mutational signatures SBS2 and SBS13, respectively? (2 pts)
+```{r}
+tail(main_table)
+breast_cancer_patients <- unlist(cancer_type[cancer_type=="Breast-AdenoCA", .SD[,1]])
+breast_cancer_patients
+
+# Number of patients with breast adenocarcinoma:
+length(breast_cancer_patients)
+
+split_table <- copy(main_table)
+split_tables <- split(split_table, by="signature_mutations")
+SBS2_table <- split_tables[[1]]
+SBS13_table <- split_tables[[2]]
+SBS2_table<-SBS2_table[, lapply(.SD, function(x){x=sum(as.double(x))}), .SDcols=breast_cancer_patients][, signature_mutations:="SBS2"][]
+SBS13_table<-SBS13_table[, lapply(.SD, function(x){x=sum(as.double(x))}), .SDcols=breast_cancer_patients][, signature_mutations:="SBS13"][]
+merge(SBS2_table, SBS13_table, all = TRUE)
+```
+Patient 9701KJid is the one with the total highest probability for mutational signatures BS13, and YDWUUPAg for SBS2.
+
