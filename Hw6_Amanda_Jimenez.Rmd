@@ -1,0 +1,145 @@
+---
+title: "Homework 6 (ggplot2) - Amanda Jiménez"
+output: html_notebook
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tibble)
+library(ggplot2)
+library(data.table)
+library(magrittr)
+library(tidyr)
+```
+
+## 1. Recreate the plots
+# 15 points
+
+In this exercise you will analyze the results of surveys that participants of an NGS course filled out after participation. In parts A) and B) you are supposed to recreate the plots.
+
+# A. (5 points)
+Grading of lecturers by course participants. Participants are colored by gender. 
+
+```{r}
+library(data.table)
+library(ggplot2)
+works <- fread("http://hex.bioinfo.hr/~mfabijanic/works.txt", header = T)
+```
+```{r}
+works_plot <- ggplot(data = works, aes(x = Lecturer, y = GradeNumerical)) + labs(y = 'Grade') + theme_bw() + theme(axis.text.x = element_text(angle = 90), aspect.ratio = 1.2) + scale_y_continuous(trans = "reverse", breaks = 5:1, labels = c('Extremely bad', 'Below average', 'Average', 'Good', 'Excellent')) + geom_violin() + geom_jitter(aes(color = Gender)) 
+works_plot
+```
+#B) (5 points)
+Results of the survey on whether the participants would recommend the course. Possible answers in the survey were: “Strongly no”,“No”, “Maybe”, “Yes”, “Strongly yes”.
+```{r}
+df <- read.delim("http://hex.bioinfo.hr/~mfabijanic/df.txt", header=T)
+```
+Hint: change the colors of the groups manually to show the missing groups.
+These are the colors from Strongly yes to Strongly no: c(“#1a9641”, “#a6d96a”, “#ffffbf”, “#fdae61”,“#d7191c”)
+```{r}
+groups <- group_by(df, recommend) %>% tally()
+groups
+groups_plot <- ggplot(groups, aes(x = recommend, y = n, fill = recommend)) + theme_bw() + labs(x = "Will you recommend #NGSchool to your friends and colleagues?", y = "Number of people")  + theme(axis.title.x = element_text(face="bold"), axis.title.y = element_text(face="bold")) + geom_col() + xlim("Strongly no", "No", "Maybe", "Yes", "Strongly yes") + scale_fill_manual(values=c("#1a9641", "#a6d96a", "#ffffbf", "#fdae61", "#d7191c"))
+groups_plot
+
+#c("#d7191c", "#fdae61", "#ffffbf", "#a6d96a", "#1a9641"))
+```
+# C. (5 points)
+Create any plot you want from the data. Make some comparisons for different groups (use facets). Make some meaningful conclusion from it.
+```{r}
+my_plot <- ggplot(works, aes(GradeNumerical)) + theme_bw()+ scale_fill_brewer(palette = "YlOrRd") + geom_histogram(aes(y=..density.., fill=Position), alpha=0.3, binwidth = .5, col="black", size=.1) + geom_density(aes(color=Lecturer), adjust=1/3.1, binwidth = 10) + scale_x_continuous(breaks = 5:1, labels = c('Extremely bad', 'Below average', 'Average', 'Good', 'Excellent'))
+my_plot
+```
+
+In this graph we can observe the distribution of frequency densities for each Lecturer. From it we can extract that for Lecturer 3 (dark green), the greatest frequency is found in "Excellent", followed by "Good", so most of the students liked this Lecturer. The case is similar for Lecturer 4 (light blue), but in this case the densities are more parallel, meaning that around half of the students think this lecturer is "Excellent", and half that is "Good". Lecturer 2 (yellow) has had most "excellent" gradings, but also quite a lot "Good" and some "Average". Again, the case in Lecturer 1 (orange) is similar:  there are equal "excellent" and "good" gradings, but there are also some "below average". Lecturer 4 (dark blue), and 6 (pink) have the most spreaded desity frecuency. For Lecturer 4 the most repeated grade is "Average", followed by "Below average", and "Good" and "Extremely bad" almost equal. For Lecturer 6 the distribution is almost opposite: the most repeated grade is "Good", followed by "Excellent", "Average" and "Below average" almost equal.
+When comparing these data with the number of students of each position that gave each grade, we have that the most common grade was "Good", with mostly Industry Specialist giving this grade, while the grade that was given the least was "Extreamly bad", mostly by PostDocs. 
+Combinig the two observations, we can conclude that the outcome of the course, measured in the grades the students assigned to the Lecturers, is quite good, since the most common grades were "Excellent", "Good" and "Average", being "Good" the grade with more frequency density for Industry Specialist and PhDs, and "excellent" for MScs and PostDocs.
+
+# D. (for extra 2 points)
+Create pie chart and add some labels. This is not a good practice thus it is not straightforward thing to do in ggplot.
+```{r}
+Lecturer5_freqs <- works[Lecturer=="Lecturer_5", .N, by="Grade"][]
+Lecturer5_freqs
+pie <- ggplot(Lecturer5_freqs, aes(x = "", y= N, fill = Grade )) + 
+  geom_bar(width = 1, stat = "identity") +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  labs(fill="Grade", 
+       x=NULL, 
+       y=NULL, 
+       title="Pie Chart of grades for Lecturer 5")
+pie + coord_polar(theta = "y", , start=0) + theme_void()
+```
+
+## 2. LTRs in mouse
+# 15 points
+
+Read in table RepeatMaskerMousechr12. It contains locations of repeats for mouse chromosome 12. Table filtering.csv contains other information about repeats that we are interested in. Here is schema about RepeatMasker table:
+
+```{r}
+library(data.table)
+rm_table <- fread("RepeatMaskerMousechr12.txt")
+translator <- read.csv("filtering.csv", header=F)
+```
+
+# A. (2 points)
+From the table get only rows containing information about repeats with RepName from filtering.csv table, column 2
+```{r}
+dt_translator <- data.table(translator)
+dt_translator <- dt_translator %>% mutate_if(is.factor, as.character) %>% rename(repName = V2)
+filtered_table <- rm_table %>% inner_join(dt_translator, by = "repName") %>% select(-c(V1,V3,V4)) %>% mutate(Length = genoEnd - genoStart)
+filtered_table
+```
+
+# B. (1 point)
+Visualise lengths of LTR elements by classes (RepName) as a single histogram:
+```{r}
+dt_LTR <- filtered_table %>% filter(repClass=="LTR")  %>% select(repName, Length) 
+dt_LTR
+# This previous step wasn't really necessary since all elements (7333 rows) are LTR class (in the repClass column). I leave it as a checking step.
+
+histogram <- ggplot(dt_LTR, aes(Length)) + theme_gray() + geom_histogram(aes(fill=repName), position = "dodge", stat = "bin", binwidth = 25)
+histogram
+```
+
+# C. (1 point)
+Visualise histograms of RepName lengths separately:
+```{r}
+histograms <- ggplot(dt_LTR, aes(Length)) + theme_grey() + geom_histogram(aes(fill=repName), bins = 30) + facet_wrap(~repName) 
+histograms
+```
+
+# D. (2 points)
+Visualise lengths for Classes in filtering.csv separately, with density graphs showing for each RepName belonging to a class. Use transparency 0.5.
+```{r}
+filtered_table2 <- rm_table %>% inner_join(dt_translator, by = "repName") %>% select(-c(19,20)) %>% mutate(Length = genoEnd - genoStart) %>% rename(Classes_filtering = V1)
+filtered_table2
+densities <- ggplot(filtered_table2, aes(Length)) + theme_grey() + geom_density(aes(fill=repName), alpha=0.5) + facet_wrap(~Classes_filtering)
+densities
+```
+
+# E. (3 points)
+Show the class and RepName and both histograms and density plot (make only the line visible from density plot)
+```{r}
+his_densities <- ggplot(filtered_table2, aes(Length)) + theme_grey() + geom_histogram(aes(y=..density.., fill=repName), binwidth = 30) + geom_density(col="black", alpha=0.5) + facet_wrap(~Classes_filtering + repName)
+his_densities
+```
+
+# F. (4 points)
+Filter each LTR element based on length, keeping only those in range of column 3 - column 4 from filtering.txt. Make a plot where histogram of old values are on the left and histogram for new values are on the right (adjust levels of the factor for correct positioning). Plot should look like this: 
+```{r}
+filtered_table3 <- rm_table %>% inner_join(dt_translator, by = "repName") %>% mutate(Length = genoEnd - genoStart, Comparison=ifelse((Length>V3 & Length<V4), "Filtered", "Not Filtered")) %>% rename(Classes_filtering = V1)
+filtered_table3 
+his_filtered_notfiltered <- ggplot(filtered_table3, aes(Length)) + theme_grey() + geom_histogram(aes(fill=repName), bins = 30) + facet_grid(repName ~ factor(Comparison, levels=c("Not Filtered", "Filtered")), scales="fixed") 
+his_filtered_notfiltered
+```
+
+# G. (2 points)
+Visualise percentage of each class lost in filtering: 
+```{r}
+filtered_table4 <- filtered_table3 %>% group_by(repName, Comparison) %>% summarise(Freq_after_filtering = n(), .groups = "keep") %>% group_by(repName) %>% mutate(Fraction = Freq_after_filtering*100/sum(Freq_after_filtering)) 
+filtered_table4
+
+Percentages <- ggplot(filtered_table4, aes(x = repName, y = Fraction)) + theme_grey() + geom_col(aes(fill = factor(Comparison, levels = c("Not Filtered", "Filtered")))) + theme(aspect.ratio=1) + xlab("Repeat Name") + scale_fill_discrete(name = "Type", labels = c("Lost by filtering", "Retained after filtering"))
+Percentages
+```
