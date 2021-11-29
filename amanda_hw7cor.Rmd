@@ -1,0 +1,414 @@
+---
+title: "Homework_7"
+output: html_notebook
+author: "Amanda Jiménez Lobato"
+date: 15.11.2021      
+---
+
+Allowed packages:  
+
+Biostrings
+ggplot2
+data.table/dplyr 
+stringr
+
+[Biostrings Documentation](https://bioconductor.org/packages/release/bioc/html/Biostrings.html)
+[RegEx Cheat Sheet](https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf)
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(ggplot2)
+library(data.table)
+library(magrittr)
+library(readr)
+library(XVector)
+library(IRanges)
+library(Biostrings)
+```
+
+# 47.2 / 55 = 85
+
+### Grep 1  
+##### 7 / 8 points  
+
+Write grep expressions that will return the following and save the regular expression in variable named grep1a, grep1b, ...    
+
+For example: exercise j): if your task is to write a regular expression that matches some digit followed by letter A, you should save this as: grep1j <- "\\dA"  (Just the pattern as a character element!):  
+
+a) elements that contain a phone number with an extension (the letter x or X followed by four digits).  
+
+```{r}
+# grep("x[0-9]{4}", pattern, ignore.case = TRUE)
+grep1a <- "x[0-9]{4}" #using "ignore.case=TRUE" after the pattern, inside the grep() OR (?i) before the expression, and "perl = TRUE" inside the grep()
+
+# or
+
+grep1a <- "(x|X)[0-9]{4}"
+```
+# 1/1 you can also use \\d for numbers
+
+b) elements that begin with three digits followed by a blank. Your answer must use the { and } repetition specifier. 
+
+```{r}
+grep1b <- "[1-9]{4} "
+```
+# 0.5/1 missing the 'begining' condition
+
+
+c) elements that contain a date. Hint: this is a very simple pattern. It does not have to work for any year before 2000.  
+
+```{r}
+grep1c <- "(0?[1-9]|(1|2)[0-9]|3[0-1])-(0?[1-9]|1[0-2])-2[0-9]{3}" #dates from 2000 to 2999
+```
+# 1/1
+
+d) elements that contain CA in either uppercase or lowercase.  
+
+```{r}
+grep1d <- "ca" #using "ignore.case=TRUE" after the pattern, inside the grep()
+
+#or
+
+grep1d <- "(C|c)(A|a)"
+```
+# 1/1
+
+
+e) elements that do not contain the word 'Sep.' (including the period).  
+
+```{r}
+# grep("^(?!.*Sep\\.)", pattern, perl = TRUE)
+grep1e <- "^(?!.*Sep\\.)" #using "perl = TRUE" after pattern inside the grep()
+```
+# 1/1 
+
+f) elements that contain the word 'de' as a whole word.  
+
+```{r}
+grep1f <- "^de$"
+```
+# 0.5 This works only on elements that only containt 'de' but not de as a word.  
+
+g) elements containing a vowel (a, e, i, o, or u) followed by a single character followed by the same vowel again. Thus, it will find ?eve? or ?adam? but not ?vera?.  
+
+```{r}
+grep1g <- "([aeiou]).\\1"
+```
+# 1/1
+
+h) elements that contain an email address (they have an @ in them), preceded by a four digit number.  
+
+```{r}
+grep1h <- "\\d{4}@"
+```
+# 1/1
+
+
+### Grep 2  
+##### 7.2 / 10 points 
+
+Create a regular expression pattern that matches all elements of the following form (different regular expression for each sub-exercise): (If it is not stated otherwise, there can be any amount of any kinds of characters before of after the expression that we are searching for) and save the regular expression in variable named grep2a, grep2b, ...    
+
+a) First character is a digit, followed by 16 letters, followed by 0 or more digits, followed by one or more question marks.  
+
+```{r}
+grep2a <- "\\d[a-z]{16}\\d*" #if first character is referred just to first character of the pattern
+grep2a <- "^\\d[a-z]{16}\\d*" #if first character is referred to first character of the whole string. I UNDERSTAND THIS IS THE CORRECT INTERPRETATION (for this sub-exercise and the following)
+```
+# 0.5/1 Missing the last condition \\?+ . Also, you can use [[:alpha:]] or [A-z] to include upper case letters
+
+b) First three characters are alphanumeric (digits or letters), followed by one or more letters that are not 'z' nor 'Z' nor 'a' nor 'A', followed by '+'.  
+
+```{r}
+#grep("([a-z]|\\d){3}[b-y]+", pattern, ignore.case = TRUE)
+grep2b <- "^([a-z]|\\d){3}[b-y]+" #using "ignore.case = TRUE" inside the grep()
+grep2b <- "^([a-z]|[A-Z]|\\d){3}([b-y]|[B-Y])+"
+```
+# 0.5 Last condition doesn't work because the + is not \\+ . And first part can be simpler like [[:alnum:]] and the second [B-z]
+
+
+c) First three characters are digits (0, 1, 2 or 3) that are then repeated, followed by zero or more letters, followed by repeated digits.  
+
+```{r}
+grep2c <- "^([0-3]{3})[a-z]*\\1"
+```
+# 1/1 but [A-z] again :p 
+
+d) Some character is a digit followed by a ?.?  
+
+```{r}
+grep2d <- "\\d\\."
+```
+# 1/1
+
+
+e) First character is a letter ?b? (lower case only) followed by 5 or more alphanumeric characters, followed by anything and ending with a number.  
+
+```{r}
+grep1e <- "^b([a-z]|[A-Z]|\\d){5, }.*\\d$"
+```
+# 1/1 You can also use [[:alnum:]] for an easier to read solution
+
+f) Digit is second to last.  
+
+```{r}
+grep2f <- "^.\\d+$"
+```
+# 0/1 
+
+
+g) First two characters are letters followed by any 5 digits larger then 2, and followed by first 7 (characters + digits) repeated.  
+
+```{r}
+grep1g <- "^(([a-z]|[A-Z]){2}[3-9]{5})\\1"
+```
+# 1/1
+
+h) First "GRP1" then either "GRP1" or "GRP2" then "GRP2" then either "GRP1" or "GRP2", as a substring (not necesary to be in the beginning or the end)  
+
+```{r}
+grep2h <- "GRP1(GRP1|GRP2)GRP2(GRP1|GRP2)"
+```
+# 1/1 "GRP1GRP[12]GRP2GRP[12]" works too 
+
+i) Words containing "@SomeNickname" and after that any number of any of the words "secret" "report" or "spy"  
+
+```{r}
+grep2i <- "@SomeNickname(secret|report|spy)+"
+```
+# 1/1
+
+j) Words containing "@SomeNickname" and after that any number of all of the words "secret" "report" or "spy", in any order
+
+```{r}
+grep2j <- "@SomeNickname((secret)+(report)+(spy)+|(secret)+(spy)+(report)+|(report)+(spy)+(secret)+|(report)+(secret)+(spy)+|(spy)+(report)+(secret)+|(spy)+(secret)+(report)+)" # I tried with the Lookahead (?=report) and Perl= TRUE inside the grep() (and so on with the other words), but it did not work
+```
+# 0.2 The point of using regex is avoiding this kind of coding, May be you were missing the counting chars? '(?=.*secret)(?=.*spy)(?=.*report)'
+
+
+### 3. CpG Depletion in Sponges
+##### 18 / 22 points
+(Yet another exercise of dinucleotides and sponges... SMH...)
+
+Genomes of organisms with cytosine methylation tend to lose most of their CpG dinucleotides, this since methylated cytosines are much more prone to become deaminated than normal cytosines and DNA-repair mechanisms are not very effective in those cases. This has been presumed for decades since the first sequencing efforts of vertebrates and confirmed later by the genome sequencing projects of human, mouse, etc. Surprisingly, [recent studies have reported that sponges are depleted of CpG dinucleotiedes too](https://www.nature.com/articles/s41559-019-0983-2?proof=t).
+
+For this excercise, you will need to load all the [CDS sequences](ftp://ftp.ensemblgenomes.org/pub/metazoa/release-48/fasta/amphimedon_queenslandica/cds/) of the sponge *Amphimedon queenslandica* and see if you can observe this depletion specifically in its protein coding genes and analyze it's implications.
+
+a) Save the downloaded sequences as a DNAStringSet object.
+
+```{r}
+path <- paste(getwd(), "Amphimedon_queenslandica.Aqu1.cds.all.fa", sep = "/")
+cds_seqs <- readDNAStringSet(path)
+cds_seqs
+```
+
+b) Once you have done that, check the sequence identifiers in the DNAStringSet you just created. Awful, right? We don't want all that information. Remove everything but the Aqu2.1.XXXXX. (2)
+
+```{r}
+#names(cds_seqs)
+names(cds_seqs) <- gsub("_.*", "", names(cds_seqs))
+cds_seqs
+```
+# 2/2
+
+c) Compute all dinucleotides for all sequences. (2)
+
+```{r}
+dinucleotide_obs_freqs <- dinucleotideFrequency(cds_seqs)
+dinucleotide_obs_freqs
+```
+# 2/2
+
+d) Get a dinucleotide bias value for CpG dinucleotides and plot the distribution for all genes. Note: for calculating the bias you need to divide the observed over expected CpGs for each gene, right? Well, first you need to calculate the expected values and for this you will need *Amphimedon*'s GC content (read next point). (4)
+
+```{r}
+path <- paste(getwd(), "Amphimedon_queenslandica.Aqu1.dna.toplevel.fa", sep = "/")
+genome <- readDNAStringSet(path)
+total_length_genome <- sum(width(genome))
+C_content <- sum(letterFrequency(genome, "C"))
+G_content <- sum(letterFrequency(genome, "G"))
+
+expected_CpG <- (C_content/ total_length_genome) * G_content
+# not sure about the rationale of this calculation
+
+CpG_obs_div_exp <- dinucleotide_obs_freqs[,"CG"]/expected_CpG
+# not sure about the rationale of this calculation
+
+dt_genes <- data.table(names(cds_seqs), CpG_obs_div_exp, width(cds_seqs))
+dt_genes[, CpG_bias := CpG_obs_div_exp*V3]
+setnames(dt_genes, c("V1", "V3"), c("seq_id", "seq_length"))
+dt_genes
+ggplot(dt_genes, aes(x = seq_id, y = CpG_bias)) + geom_col() + theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+# 1/4 Both the observed and expected values are calculated per gene, the second one is the result of the produc of lenght * probabilty of observing a CpG dinucleotide. I think that got mixed up somewhere. And that plot is not a distribution. 
+
+
+e) Load [*Amphimedon* genome](http://ftp.ensemblgenomes.org/pub/metazoa/release-51/fasta/amphimedon_queenslandica/dna/Amphimedon_queenslandica.Aqu1.dna.toplevel.fa.gz) and calculate it's GC content. Then plot the GC content for 100bp windows along the longest contig in the genome. (4)
+
+```{r}
+CG_content <- sum(letterFrequency(genome, c("C", "G"))) / total_length_genome
+genome #it is ordered by width, from longest to shortest contig. So the longest contig is the one in the first line.
+```
+```{r}
+longest_contig <- genome[1]
+i=1
+subseq_list <- list()
+while(i <= (width(longest_contig)-31)){
+  subseq_list <- c(subseq_list, subseq(longest_contig, start=i,  width = 100))
+  i <- i + 100
+}
+subseq_list <- c(subseq_list, subseq(longest_contig, start=i,  end=1888931))
+subseq_DNA_stringset <- do.call(c, subseq_list)
+CandG_content <- letterFrequency(subseq_DNA_stringset, c("C", "G"))
+CG_content <- rowSums(CandG_content)
+CG_content_prop <- c(CG_content[1:18889]/100, CG_content[18890]/31)
+```
+```{r}
+data.frame(CG_content_prop) %>% ggplot(aes(x = row.names(.), y = CG_content_prop)) + geom_col() + theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + xlab("100bp windows for Contig13522")
+```
+# 3/4 Nice but the point of the excercise was to play with the function letterFrequencyInSlidingView. While this is a solution, is not really a biostrings solution. "Horas de trabajo te puede ahorrar minutos de leer el manual" :) 
+
+f) Translate the CDS to proteins. But before you do that, keep only those with I) a length that is a multiple of three, II) starts coding for Methionine, III) dont't contain ambiguos bases , and IV) end with a stop codon. (5)
+
+```{r}
+#CDS_dt <- data.table(names=names(cds_seqs), width=width(cds_seqs), seq=as.character(cds_seqs))
+#patterns <- c("N", "R", "Y", "K", "M", "S", "W", "B", "D", "H", "V")
+#stop <- c("TAG", "TGA", "TAA")
+#CDS_dt_filtered <- CDS_dt %>% filter(width%%3==0, grepl("^ATG", seq), !grepl(paste(patterns, collapse="|"), seq), grepl(paste(stop, collapse="|"), seq))
+
+# I)
+filtered_cds_seqs <- cds_seqs[width(cds_seqs)%%3==0]
+#II)
+filtered_cds_seqs <- filtered_cds_seqs[grep("^ATG", filtered_cds_seqs)]
+#III)
+filtered_cds_seqs <- filtered_cds_seqs[grep("^[^NRYKMSWBDHV]+$", filtered_cds_seqs)]
+#IV)
+filtered_cds_seqs <- filtered_cds_seqs[grep("(TAG|TGA|TAA)$", filtered_cds_seqs)]
+#filtered_cds_seqs
+
+translated_cds <- translate(filtered_cds_seqs)
+translated_cds
+```
+# 5/5
+
+g) In your filtered CDSs, check if the lack of CpGs is reflected in the sponge's relative synonimous codon usage (RSCU). Focus on Proline only, and check only genes that actually contain Proline at least five times. (5)
+
+```{r}
+#codons for Proline: CCA, CCT, CCG, CCC
+
+plus_5_Prolines <- vcountPattern("P", translated_cds)
+positions_plus_5_Prolines <- which(plus_5_Prolines>=5)
+filtered_cds_Proline_check <- filtered_cds_seqs[positions_plus_5_Prolines]
+codons_count <- trinucleotideFrequency(filtered_cds_Proline_check, step = 3)
+
+CCA_count <- sum(codons_count[,"CCA"])
+CCT_count <- sum(codons_count[,"CCT"])
+CCG_count <- sum(codons_count[,"CCG"])
+CCC_count <- sum(codons_count[,"CCC"])
+
+RSCU_CCA <- 4*CCA_count/(CCA_count+CCT_count+CCG_count+CCC_count)
+RSCU_CCT <- 4*CCT_count/(CCA_count+CCT_count+CCG_count+CCC_count)
+RSCU_CCG <- 4*CCG_count/(CCA_count+CCT_count+CCG_count+CCC_count)
+RSCU_CCC <- 4*CCC_count/(CCA_count+CCT_count+CCG_count+CCC_count)
+```
+# 5/5
+
+### 4. Dotplot
+##### 15 / 15 points
+
+A) Make a (call it dotPlot ) function that takes 3 arguments: DNAsequence, windowSize and Threshold and plots a dotplot. Dot on a plot is plotted if subsequence of size windowSize has more than Threshold same nucleotides in the corresponding positions as some other subsequence of size windowSize. You don't need to do this for all possible windows, do it for every 5 nucleotides. For example, if sequence is of length 3000, windowSize is 100, make windows from 1-100, 6-105, 11-110, ..., 2901-3000 and compare all combinations of those subsequences.  (8)
+
+```{r}
+dotPlot <- function(DNAsequence, windowSize, Treshold){
+  DNAsequence <- DNAString(DNAsequence)
+  i=1
+  subseq_list2 <- list()
+  while((i <= length(DNAsequence)) & (length(DNAsequence)-i >= windowSize)){
+    subseq_list2 <- c(subseq_list2, subseq(DNAsequence, start = i,  width = windowSize))
+    i <- i +  5
+  }
+  subseq_DNA_stringset <- DNAStringSet(subseq_list2)
+  mismatch = windowSize - Treshold
+  list_to_plot <- vwhichPDict(subseq_DNA_stringset, subseq_DNA_stringset, max.mismatch = mismatch)
+  names(list_to_plot) <-as.character(1:length(list_to_plot))
+  vectors <- c(unlist(lapply(names(list_to_plot), function(x){paste(list_to_plot[[x]])})))
+  x_axis <- unlist(lapply(1:length(list_to_plot), function(x){return(rep(paste(x), length(list_to_plot[[x]])))}))
+  dt <- data.table(x_axis = x_axis, y_axis = vectors)
+  p <- ggplot(dt, aes(x=x_axis, y=y_axis)) + geom_dotplot(binaxis='y', stackdir='center', binwidth = 0.5, stackratio=1.5, dotsize=1) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) 
+  p
+}
+#example <- DNAString(paste(sample(DNA_BASES, 2000, replace=TRUE), collapse=""))
+dotPlot(DNAsequence = sponge_cds$Aqu2.1.44141, windowSize = 100, Treshold = 35)
+```
+# 8/8 Good, but it would be very much appreciated if next time you write a little documentation on your function, specially when you have nested operations. Everyone, specially your future self, will like that :p 
+
+
+B) Next, plot number of points (y axis) versus threshold (x axis) too see when your plot has most information content. (3)
+
+```{r}
+number_of_Points <- function(DNAsequence, windowSize, Treshold){
+  DNAsequence <- DNAString(DNAsequence)
+  i=1
+  subseq_list2 <- list()
+  while((i <= length(DNAsequence)) & (length(DNAsequence)-i >= windowSize)){
+    subseq_list2 <- c(subseq_list2, subseq(DNAsequence, start = i,  width = windowSize))
+    i <- i +  5
+  }
+  subseq_DNA_stringset <- DNAStringSet(subseq_list2)
+  mismatch = windowSize - Treshold
+  list_of_matches <- vwhichPDict(subseq_DNA_stringset, subseq_DNA_stringset, max.mismatch = mismatch)
+  names(list_of_matches) <-as.character(1:length(list_of_matches))
+  vectors <- c(unlist(lapply(names(list_of_matches), function(x){paste(list_of_matches[[x]])})))
+  x_axis <- unlist(lapply(1:length(list_of_matches), function(x){return(rep(paste(x), length(list_of_matches[[x]])))}))
+  dt <- data.table(x_axis = x_axis, y_axis = vectors)
+  return(nrow(dt))
+}
+tresholds <- seq(20, 60, by=1)
+number_of_matches <- lapply(tresholds, number_of_Points, DNAsequence = sponge_cds$Aqu2.1.44141, windowSize = 100)
+dt <- data.table(treshold = tresholds, number_of_matches = unlist(number_of_matches)) 
+```
+```{r}
+ggplot(dt, aes(x = treshold, y = number_of_matches)) + geom_col()
+```
+# 3/3
+
+C) Make a function that will do a dotPlot for 2 different sequences. (call it dotPlotTwo ), so it will take 4 arguments: sequenceOne, sequenceTwo, windowSize and Threshold. (4)
+
+```{r}
+dotPlot2 <- function(DNAsequence1, DNAsequence2, windowSize, Treshold){
+  DNAsequence1 <- DNAString(DNAsequence1)
+  DNAsequence2 <- DNAString(DNAsequence2)
+  i=1
+  subseq_list1 <- list()
+  while((i <= length(DNAsequence1)) & (length(DNAsequence1)-i >= windowSize)){
+    subseq_list1 <- c(subseq_list1, subseq(DNAsequence1, start = i,  width = windowSize))
+    i <- i +  5
+  }
+  subseq_DNA_stringset1 <- DNAStringSet(subseq_list1)
+  j=1
+  subseq_list2 <- list()
+  while((j <= length(DNAsequence2)) & (length(DNAsequence2)-j >= windowSize)){
+    subseq_list2 <- c(subseq_list2, subseq(DNAsequence2, start = j,  width = windowSize))
+    j <- j +  5
+  }
+  subseq_DNA_stringset2 <- DNAStringSet(subseq_list2)  
+  mismatch = windowSize - Treshold
+  list_to_plot <- vwhichPDict(subseq_DNA_stringset1, subseq_DNA_stringset2, max.mismatch = mismatch)
+  list_to_plot
+  names(list_to_plot) <-as.character(1:length(list_to_plot))
+  vectors <- c(unlist(lapply(names(list_to_plot), function(x){paste(list_to_plot[[x]])}))) #matches of dictionary (DNAsequence1) in a subject seq (DNAsequence2)
+  x_axis <- unlist(lapply(1:length(list_to_plot), function(x){return(rep(paste(x), length(list_to_plot[[x]])))})) #set of refecrence sequences or subject (DNAsequence2)
+  dt <- data.table(x_axis = x_axis, y_axis = vectors)
+  p <- ggplot(dt, aes(x=x_axis, y=y_axis)) + geom_dotplot(binaxis='y', stackdir='center', binwidth = 0.5, stackratio=1.5, dotsize=1) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) + xlab("Subject (DNAsequence2)") + ylab("Dictionary (DNAsequence1)")
+  p
+}
+#example <- DNAString(paste(sample(DNA_BASES, 2000, replace=TRUE), collapse=""))
+dotPlot2(DNAsequence1 = sponge_cds$Aqu2.1.44141, DNAsequence2 = sponge_cds$Aqu2.1.19739, windowSize = 100, Treshold = 40)
+```
+# 4/4 
