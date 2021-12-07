@@ -2,6 +2,10 @@
 title: "Homework 6 (ggplot2) - Amanda Jiménez"
 output: html_notebook
 ---
+
+# 88,3% (26.5/30)
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
@@ -29,6 +33,8 @@ works <- fread("http://hex.bioinfo.hr/~mfabijanic/works.txt", header = T)
 works_plot <- ggplot(data = works, aes(x = Lecturer, y = GradeNumerical)) + labs(y = 'Grade') + theme_bw() + theme(axis.text.x = element_text(angle = 90), aspect.ratio = 1.2) + scale_y_continuous(trans = "reverse", breaks = 5:1, labels = c('Extremely bad', 'Below average', 'Average', 'Good', 'Excellent')) + geom_violin() + geom_jitter(aes(color = Gender)) 
 works_plot
 ```
+<span style="color:red"> 4.75/5 Amazing :D Only thing is that jitter dots need to be more close using *width*. </span>
+
 #B) (5 points)
 Results of the survey on whether the participants would recommend the course. Possible answers in the survey were: “Strongly no”,“No”, “Maybe”, “Yes”, “Strongly yes”.
 ```{r}
@@ -44,6 +50,8 @@ groups_plot
 
 #c("#d7191c", "#fdae61", "#ffffbf", "#a6d96a", "#1a9641"))
 ```
+<span style="color:red"> 4.5/5 pts Missing black outline. </span>
+
 # C. (5 points)
 Create any plot you want from the data. Make some comparisons for different groups (use facets). Make some meaningful conclusion from it.
 ```{r}
@@ -54,6 +62,9 @@ my_plot
 In this graph we can observe the distribution of frequency densities for each Lecturer. From it we can extract that for Lecturer 3 (dark green), the greatest frequency is found in "Excellent", followed by "Good", so most of the students liked this Lecturer. The case is similar for Lecturer 4 (light blue), but in this case the densities are more parallel, meaning that around half of the students think this lecturer is "Excellent", and half that is "Good". Lecturer 2 (yellow) has had most "excellent" gradings, but also quite a lot "Good" and some "Average". Again, the case in Lecturer 1 (orange) is similar:  there are equal "excellent" and "good" gradings, but there are also some "below average". Lecturer 4 (dark blue), and 6 (pink) have the most spreaded desity frecuency. For Lecturer 4 the most repeated grade is "Average", followed by "Below average", and "Good" and "Extremely bad" almost equal. For Lecturer 6 the distribution is almost opposite: the most repeated grade is "Good", followed by "Excellent", "Average" and "Below average" almost equal.
 When comparing these data with the number of students of each position that gave each grade, we have that the most common grade was "Good", with mostly Industry Specialist giving this grade, while the grade that was given the least was "Extreamly bad", mostly by PostDocs. 
 Combinig the two observations, we can conclude that the outcome of the course, measured in the grades the students assigned to the Lecturers, is quite good, since the most common grades were "Excellent", "Good" and "Average", being "Good" the grade with more frequency density for Industry Specialist and PhDs, and "excellent" for MScs and PostDocs.
+
+<span style="color:red"> 2.75/5 pts  When plotting ordinal categorical variables then it does not make sense to show density plots, especially combining it with a stacked bar plot with categorical variables. Please be careful in the future when analyzing and showing plots for various different type of variables/data. This combination is quite difficult to read and interpret. Different types of plots are needed. Showing proportion of grades for each lecturer and then plotting it using dodge bar plot would be better than density plot. You did not use facets as specified in the task. When you refer to Lecturer 2 (yellow) it is difficult to see which yellow because the positions are also colored by yellow. Not a good use of color palettes. Do not have same or similar colors on the same plot. Conclusions are valid but the choice of graph and colors are not. </span>
+
 
 # D. (for extra 2 points)
 Create pie chart and add some labels. This is not a good practice thus it is not straightforward thing to do in ggplot.
@@ -68,8 +79,10 @@ pie <- ggplot(Lecturer5_freqs, aes(x = "", y= N, fill = Grade )) +
        x=NULL, 
        y=NULL, 
        title="Pie Chart of grades for Lecturer 5")
-pie + coord_polar(theta = "y", , start=0) + theme_void()
+pie + coord_polar(theta = "y", start=0) + theme_void()
 ```
+<span style="color:red"> Extra 1.5/2 Missing the labels inside plot </span>
+
 
 ## 2. LTRs in mouse
 # 15 points
@@ -78,8 +91,8 @@ Read in table RepeatMaskerMousechr12. It contains locations of repeats for mouse
 
 ```{r}
 library(data.table)
-rm_table <- fread("RepeatMaskerMousechr12.txt")
-translator <- read.csv("filtering.csv", header=F)
+rm_table <- fread("../original_HW6/RepeatMaskerMousechr12.txt")
+translator <- read.csv("../original_HW6/filtering.csv", header=F)
 ```
 
 # A. (2 points)
@@ -90,6 +103,7 @@ dt_translator <- dt_translator %>% mutate_if(is.factor, as.character) %>% rename
 filtered_table <- rm_table %>% inner_join(dt_translator, by = "repName") %>% select(-c(V1,V3,V4)) %>% mutate(Length = genoEnd - genoStart)
 filtered_table
 ```
+<span style="color:green"> 2/2 pts. </span>
 
 # B. (1 point)
 Visualise lengths of LTR elements by classes (RepName) as a single histogram:
@@ -102,12 +116,15 @@ histogram <- ggplot(dt_LTR, aes(Length)) + theme_gray() + geom_histogram(aes(fil
 histogram
 ```
 
+<span style="color:green"> 1/1 pts. </span>
+
 # C. (1 point)
 Visualise histograms of RepName lengths separately:
 ```{r}
 histograms <- ggplot(dt_LTR, aes(Length)) + theme_grey() + geom_histogram(aes(fill=repName), bins = 30) + facet_wrap(~repName) 
 histograms
 ```
+<span style="color:green"> 1/1 pts. </span>
 
 # D. (2 points)
 Visualise lengths for Classes in filtering.csv separately, with density graphs showing for each RepName belonging to a class. Use transparency 0.5.
@@ -117,6 +134,7 @@ filtered_table2
 densities <- ggplot(filtered_table2, aes(Length)) + theme_grey() + geom_density(aes(fill=repName), alpha=0.5) + facet_wrap(~Classes_filtering)
 densities
 ```
+<span style="color:green"> 2/2 pts. </span>
 
 # E. (3 points)
 Show the class and RepName and both histograms and density plot (make only the line visible from density plot)
@@ -124,6 +142,7 @@ Show the class and RepName and both histograms and density plot (make only the l
 his_densities <- ggplot(filtered_table2, aes(Length)) + theme_grey() + geom_histogram(aes(y=..density.., fill=repName), binwidth = 30) + geom_density(col="black", alpha=0.5) + facet_wrap(~Classes_filtering + repName)
 his_densities
 ```
+<span style="color:green"> 3/3 pts. binwidth=30 was not needed</span>
 
 # F. (4 points)
 Filter each LTR element based on length, keeping only those in range of column 3 - column 4 from filtering.txt. Make a plot where histogram of old values are on the left and histogram for new values are on the right (adjust levels of the factor for correct positioning). Plot should look like this: 
@@ -133,6 +152,8 @@ filtered_table3
 his_filtered_notfiltered <- ggplot(filtered_table3, aes(Length)) + theme_grey() + geom_histogram(aes(fill=repName), bins = 30) + facet_grid(repName ~ factor(Comparison, levels=c("Not Filtered", "Filtered")), scales="fixed") 
 his_filtered_notfiltered
 ```
+<span style="color:red"> 2/4 pts. Wrong distribution for not filtered category. You had to show all the results before filtering and not purely separate them based on the PASS and FAIL filtering criteria. In Not filtered category you had to have all the length and then in Filtered category only those that pass the filtering criteria. </span>
+
 
 # G. (2 points)
 Visualise percentage of each class lost in filtering: 
@@ -143,3 +164,5 @@ filtered_table4
 Percentages <- ggplot(filtered_table4, aes(x = repName, y = Fraction)) + theme_grey() + geom_col(aes(fill = factor(Comparison, levels = c("Not Filtered", "Filtered")))) + theme(aspect.ratio=1) + xlab("Repeat Name") + scale_fill_discrete(name = "Type", labels = c("Lost by filtering", "Retained after filtering"))
 Percentages
 ```
+
+<span style="color:green"> 2/2 pts. </span>
